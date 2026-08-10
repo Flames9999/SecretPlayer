@@ -453,3 +453,32 @@ window.addEventListener("load", ()=>{updateCoins();setupAuth();});
 
 </body>
 </html>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import { getAuth, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+  // إعدادات مشروعك في Firebase
+  const firebaseConfig = {
+    apiKey: "ضع_API_KEY_الخاص_بالمشروع_هنا",
+    authDomain: "secretplayer-c87cf.firebaseapp.com",
+    projectId: "secretplayer-c87cf",
+    storageBucket: "secretplayer-c87cf.appspot.com",
+    messagingSenderId: "ضع_المعرف_هنا",
+    appId: "ضع_APP_ID_هنا"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const provider = new GoogleAuthProvider();
+
+  window.loginWithGoogle = function() {
+    signInWithPopup(auth, provider)
+      .then((result) => {
+        alert("تم تسجيل الدخول بنجاح! مرحباً " + result.user.displayName);
+      })
+      .catch((error) => {
+        alert("فشل تسجيل الدخول: " + error.message);
+      });
+  };
+          </script>
