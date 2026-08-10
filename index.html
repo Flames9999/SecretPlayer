@@ -458,21 +458,23 @@ window.addEventListener("load", ()=>{updateCoins();setupAuth();});
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
   import { getAuth, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
-  // إعدادات مشروعك في Firebase
+  // إعدادات مشروعك الحقيقية من Firebase
   const firebaseConfig = {
-    apiKey: "ضع_API_KEY_الخاص_بالمشروع_هنا",
+    apiKey: "AIzaSyAIUE0-HBDmLjmkkvFGYmGayOAuWiWWyOw",
     authDomain: "secretplayer-c87cf.firebaseapp.com",
     projectId: "secretplayer-c87cf",
-    storageBucket: "secretplayer-c87cf.appspot.com",
-    messagingSenderId: "ضع_المعرف_هنا",
-    appId: "ضع_APP_ID_هنا"
+    storageBucket: "secretplayer-c87cf.firebasestorage.app",
+    messagingSenderId: "250657943229",
+    appId: "1:250657943229:web:e2ab5e5fcee18542bf11d4",
+    measurementId: "G-YBYVG6TN03"
   };
 
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
   const provider = new GoogleAuthProvider();
 
-  window.loginWithGoogle = function() {
+  // ربط الدالة بالزر المخصص في موقعك
+  window.googleLogin = function() {
     signInWithPopup(auth, provider)
       .then((result) => {
         alert("تم تسجيل الدخول بنجاح! مرحباً " + result.user.displayName);
@@ -481,4 +483,4 @@ window.addEventListener("load", ()=>{updateCoins();setupAuth();});
         alert("فشل تسجيل الدخول: " + error.message);
       });
   };
-          </script>
+</script>
