@@ -451,18 +451,13 @@ window.addEventListener("load", ()=>{updateCoins();setupAuth();});
 
 <!-- Firebase SDK -->
 
-</body>
+</body> 
 </html> 
-
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-  import {
-    getAuth,
-    GoogleAuthProvider,
-    signInWithRedirect,
-    getRedirectResult
-  } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+  import { getAuth, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
+  // إعدادات مشروعك الحقيقية من Firebase
   const firebaseConfig = {
     apiKey: "AIzaSyAIUE0-HBDmLjmkkvFGYmGayOAuWiWWyOw",
     authDomain: "secretplayer-c87cf.firebaseapp.com",
@@ -477,20 +472,14 @@ window.addEventListener("load", ()=>{updateCoins();setupAuth();});
   const auth = getAuth(app);
   const provider = new GoogleAuthProvider();
 
-  // تسجيل الدخول بحساب Google
-  window.googleLogin = function () {
-    signInWithRedirect(auth, provider);
-  };
-
-  // التحقق من نتيجة تسجيل الدخول بعد الرجوع للموقع
-  getRedirectResult(auth)
-    .then((result) => {
-      if (result && result.user) {
+  // ربط الدالة بالزر المخصص في موقعك
+  window.googleLogin = function() {
+    signInWithPopup(auth, provider)
+      .then((result) => {
         alert("تم تسجيل الدخول بنجاح! مرحباً " + result.user.displayName);
-      }
-    })
-    .catch((error) => {
-      alert("فشل تسجيل الدخول: " + error.message);
-      console.error(error);
-    });
-            </script>
+      })
+      .catch((error) => {
+        alert("فشل تسجيل الدخول: " + error.message);
+      });
+  };
+</script>
