@@ -453,33 +453,25 @@ window.addEventListener("load", ()=>{updateCoins();setupAuth();});
 
 </body> 
 </html> 
+
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-  import { getAuth, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import{initializeApp}from"https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import{getAuth,GoogleAuthProvider,signInWithRedirect,getRedirectResult}from"https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
-  // إعدادات مشروعك الحقيقية من Firebase
-  const firebaseConfig = {
-    apiKey: "AIzaSyAIUE0-HBDmLjmkkvFGYmGayOAuWiWWyOw",
-    authDomain: "secretplayer-c87cf.firebaseapp.com",
-    projectId: "secretplayer-c87cf",
-    storageBucket: "secretplayer-c87cf.firebasestorage.app",
-    messagingSenderId: "250657943229",
-    appId: "1:250657943229:web:e2ab5e5fcee18542bf11d4",
-    measurementId: "G-YBYVG6TN03"
-  };
+const app=initializeApp({
+apiKey:"AIzaSyAIUE0-HBDmLjmkkvFGYmGayOAuWiWWyOw",
+authDomain:"secretplayer-c87cf.firebaseapp.com",
+projectId:"secretplayer-c87cf",
+storageBucket:"secretplayer-c87cf.firebasestorage.app",
+messagingSenderId:"250657943229",
+appId:"1:250657943229:web:e2ab5e5fcee18542bf11d4"
+});
 
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const provider = new GoogleAuthProvider();
+const auth=getAuth(app),provider=new GoogleAuthProvider();
 
-  // ربط الدالة بالزر المخصص في موقعك
-  window.googleLogin = function() {
-    signInWithPopup(auth, provider)
-      .then((result) => {
-        alert("تم تسجيل الدخول بنجاح! مرحباً " + result.user.displayName);
-      })
-      .catch((error) => {
-        alert("فشل تسجيل الدخول: " + error.message);
-      });
-  };
+window.googleLogin=()=>signInWithRedirect(auth,provider);
+
+getRedirectResult(auth).then(r=>{
+if(r?.user)alert("تم تسجيل الدخول! مرحباً "+r.user.displayName);
+}).catch(e=>alert("خطأ: "+e.message));
 </script>
