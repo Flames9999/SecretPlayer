@@ -453,7 +453,6 @@ window.addEventListener("load", ()=>{updateCoins();setupAuth();});
 
 </body> 
 </html> 
-
 <script type="module">
 import{initializeApp}from"https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import{getAuth,GoogleAuthProvider,signInWithRedirect,getRedirectResult}from"https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
@@ -467,11 +466,15 @@ messagingSenderId:"250657943229",
 appId:"1:250657943229:web:e2ab5e5fcee18542bf11d4"
 });
 
-const auth=getAuth(app),provider=new GoogleAuthProvider();
+const auth=getAuth(app),p=new GoogleAuthProvider();
 
-window.googleLogin=()=>signInWithRedirect(auth,provider);
+window.googleLogin=()=>signInWithRedirect(auth,p).catch(e=>alert(
+"رمز الخطأ:\n"+e.code+"\n\nالرسالة:\n"+e.message
+));
 
 getRedirectResult(auth).then(r=>{
-if(r?.user)alert("تم تسجيل الدخول! مرحباً "+r.user.displayName);
-}).catch(e=>alert("خطأ: "+e.message));
+if(r?.user)alert("نجح تسجيل الدخول ✅\n"+r.user.displayName);
+}).catch(e=>alert(
+"خطأ بعد الرجوع:\n"+e.code+"\n\n"+e.message
+));
 </script>
