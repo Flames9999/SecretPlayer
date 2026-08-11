@@ -1,1 +1,429 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>⚽ تحدي اللاعب السري</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,Tahoma,sans-serif;background:#050914;color:#fff}
+.app{width:94%;max-width:850px;margin:auto;padding:20px 0 40px}
+h1{text-align:center;color:#ffd43b;margin-bottom:5px}.sub{text-align:center;color:#aab5c8;margin-bottom:20px}
+.card{background:linear-gradient(145deg,#172746,#080d19);border:1px solid #344b72;border-radius:25px;padding:20px;margin-bottom:15px}
+.player-card{text-align:center;border:1px solid #d4a900;background:linear-gradient(145deg,#263c68,#0b111f)}
+.icon{font-size:65px;margin:10px}.player-name{font-size:25px;font-weight:bold;color:#ffd43b}.hidden{filter:blur(8px)}
+.chat{height:330px;overflow-y:auto;background:#02050b;border-radius:20px;padding:15px;border:1px solid #263753}
+.msg{padding:12px;border-radius:15px;margin:8px 0;line-height:1.6}.you{background:#15345f;margin-left:35px}.bot{background:#1d2432;margin-right:35px}.system{text-align:center;color:#ffd43b}
+input{width:100%;padding:16px;margin-top:10px;border-radius:15px;border:1px solid #344a6c;background:#0d1627;color:white;font-size:16px;outline:none}
+button{width:100%;padding:16px;margin-top:10px;border:0;border-radius:15px;font-size:17px;font-weight:bold;cursor:pointer}
+.yellow{background:#ffd43b;color:#111}.blue{background:#4da3ff;color:white}.red{background:#ff526c;color:white}
+.answers{display:flex;gap:10px}.answers button{flex:1}.yes{background:#39d98a;color:#062015}.no{background:#ff526c;color:white}
+.bot-question{display:none;margin-top:15px;padding:15px;background:#111c30;border:1px solid #3a5279;border-radius:18px}
+.question-title{text-align:center;font-weight:bold;font-size:18px;margin-bottom:10px}
+.score{display:flex;gap:10px;margin-bottom:15px}.score div{flex:1;background:#10192b;border:1px solid #293b5a;border-radius:15px;padding:12px;text-align:center}.score b{display:block;font-size:25px;color:#ffd43b}
+.mode-buttons{display:grid;grid-template-columns:1fr 1fr;gap:12px}.mode-buttons button{margin:0}
+.online-info{text-align:center;color:#aab5c8;line-height:1.7}
+#game,#onlineSetup,#onlineGame,#newGame{display:none}
+#onlineGame .turn{padding:12px;text-align:center;border-radius:15px;background:#10192b;margin-bottom:12px;color:#ffd43b;font-weight:bold}
+.auth-card{text-align:center}.auth-card h2{margin-top:0}
+.auth-card button{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+@media(max-width:600px){.mode-buttons{grid-template-columns:1fr}.auth-card button{min-height:52px;font-size:16px}}
+</style>
+</head>
+<body>
+<div class="app">
+<h1>⚽ تحدي اللاعب السري</h1>
+<div class="sub">أنت 🆚 الروبوت أو لاعب حقيقي 🌐</div>
+<div id="authCard" class="card auth-card">
+<h2>🔐 تسجيل الدخول</h2>
+<p class="online-info" id="authStatus">سجّل الدخول بحساب Google للعب أونلاين وحفظ حسابك.</p>
+<button id="googleLoginBtn" class="blue" onclick="signInWithGoogle()">🔵 تسجيل الدخول بحساب Google</button>
+<button id="googleLogoutBtn" class="red" onclick="signOutGoogle()" style="display:none">🚪 تسجيل الخروج</button>
+</div>
+
+<div class="score">
+<div>👤 أنت <b id="myScore">0</b></div>
+<div>🤖/👤 الخصم <b id="opScore">0</b></div>
+</div>
+
+<div id="menu" class="card">
+<h2>🎮 اختر وضع اللعب</h2>
+<div class="mode-buttons">
+<button class="yellow" onclick="showBot()">🤖 ضد الروبوت</button>
+<button class="blue" onclick="startOnline()">🌐 أونلاين عشوائي</button>
+</div>
+</div>
+
+<div id="start" class="card">
+<h2>🎴 اختر لاعبك السري</h2>
+<p>اكتب اسم اللاعب الذي تريد أن يحاول الخصم اكتشافه:</p>
+<input id="playerInput" placeholder="مثال: كريستيانو رونالدو">
+<button class="yellow" onclick="startBotGame()">ابدأ اللعبة 🎮</button>
+</div>
+
+<div id="onlineSetup" class="card">
+<h2>🌐 اللعب أونلاين</h2>
+<p class="online-info" id="onlineStatus">🔎 جاري البحث عن لاعب عشوائي...</p>
+<input id="onlinePlayerInput" placeholder="اختر لاعبك الآن">
+<button class="yellow" onclick="chooseOnlinePlayer()">🎴 تأكيد اللاعب السري</button>
+</div>
+
+<div id="game">
+<div class="card player-card"><div>🎴 لاعبك السري</div><div class="icon" id="myIcon">❓</div><div class="player-name" id="myPlayerName">مخفي</div></div>
+<div class="card player-card"><div>🤖 لاعب الروبوت السري</div><div class="icon">🤖</div><div class="player-name hidden">لاعب سري</div></div>
+<div class="chat" id="chat"></div>
+<div class="card">
+<input id="questionInput" placeholder="اسأل الروبوت: هل هو برتغالي؟">
+<button class="yellow" onclick="askRobot()">🤖 اسأل الروبوت</button>
+<input id="guessInput" placeholder="اكتب اسم لاعب الروبوت...">
+<button class="red" onclick="guessBotPlayer()">🎯 تخمين اللاعب</button>
+<div class="bot-question" id="botQuestion"><div class="question-title" id="botQuestionText"></div><div class="answers"><button class="yes" onclick="answerBot(true)">✅ نعم</button><button class="no" onclick="answerBot(false)">❌ لا</button></div></div>
+</div>
+</div>
+
+<div id="onlineGame">
+<div class="turn" id="onlineTurn">⏳</div>
+<div class="card player-card"><div>🎴 لاعبك السري</div><div class="icon" id="onlineMyIcon">❓</div><div class="player-name" id="onlineMyName">مخفي</div></div>
+<div class="card player-card"><div>👤 لاعب الخصم</div><div class="icon">🤫</div><div class="player-name hidden">لاعب سري</div></div>
+<div class="chat" id="onlineChat"></div>
+<div class="card">
+<input id="onlineQuestion" placeholder="اسأل خصمك: هل هو برتغالي؟">
+<button class="yellow" onclick="sendOnlineQuestion()">❓ إرسال السؤال</button>
+<input id="onlineGuess" placeholder="اكتب تخمينك...">
+<button class="red" onclick="sendOnlineGuess()">🎯 تخمين</button>
+<div class="bot-question" id="onlineAnswerBox"><div class="question-title" id="onlineQuestionText"></div><div class="answers"><button class="yes" onclick="answerOnline(true)">✅ نعم</button><button class="no" onclick="answerOnline(false)">❌ لا</button></div></div>
+</div>
+</div>
+
+<button id="newGame" class="blue" onclick="location.reload()">🔄 لعبة جديدة</button>
+</div>
+
+<script>
+// ====== ضع بيانات Firebase هنا ======
+const firebaseConfig = {
+  apiKey: "AIzaSyAIUE0-HBDmLjmkkvFGYmGayOAuWIwWyOw",
+  authDomain: "secretplayer-c87cf.firebaseapp.com",
+  projectId: "secretplayer-c87cf",
+  storageBucket: "secretplayer-c87cf.firebasestorage.app",
+  messagingSenderId: "250657943229",
+  appId: "1:250657943229:web:e2ab5e5fcee18542bf11d4",
+  measurementId: "G-YBYVG6TN03"
+};
+// =====================================
+
+
+// ================= GOOGLE AUTH =================
+function firebaseConfigReady(){
+ return !!firebaseConfig &&
+ typeof firebaseConfig.apiKey==="string" && firebaseConfig.apiKey && !firebaseConfig.apiKey.includes("ضع_") &&
+ typeof firebaseConfig.authDomain==="string" && firebaseConfig.authDomain && !firebaseConfig.authDomain.includes("ضع_") &&
+ typeof firebaseConfig.projectId==="string" && firebaseConfig.projectId && !firebaseConfig.projectId.includes("ضع_") &&
+ typeof firebaseConfig.appId==="string" && firebaseConfig.appId && !firebaseConfig.appId.includes("ضع_");
+}
+function setAuthStatus(text){
+ const el=document.getElementById("authStatus"); if(el)el.textContent=text;
+}
+function updateAuthUI(user){
+ const login=document.getElementById("googleLoginBtn"), logout=document.getElementById("googleLogoutBtn");
+ if(!login||!logout)return;
+ if(user){
+  login.style.display="none"; logout.style.display="block";
+  setAuthStatus("✅ تم تسجيل الدخول: "+(user.displayName||user.email||"حساب Google"));
+ }else{
+  login.style.display="block"; logout.style.display="none";
+  setAuthStatus("سجّل الدخول بحساب Google للعب أونلاين وحفظ حسابك.");
+ }
+}
+function initFirebaseAuth(){
+ try{
+  if(!window.firebase){setAuthStatus("⚠️ لم يتم تحميل Firebase.");return false;}
+  if(!firebaseConfigReady()){
+   setAuthStatus("⚠️ بيانات Firebase غير مكتملة.");
+   return false;
+  }
+  if(location.protocol!=="http:" && location.protocol!=="https:"){
+   setAuthStatus("ℹ️ افتح الموقع عبر HTTPS أو HTTP لتسجيل Google.");
+   return false;
+  }
+  if(!firebase.apps.length)firebase.initializeApp(firebaseConfig);
+  auth=firebase.auth();
+  db=firebase.firestore();
+  auth.onAuthStateChanged(updateAuthUI);
+  return true;
+ }catch(e){
+  console.error("Firebase init error:",e);
+  setAuthStatus("⚠️ تعذر تشغيل Firebase: "+(e.code||e.message));
+  return false;
+ }
+}
+async function signInWithGoogle(){
+ if(!initFirebaseAuth())return;
+
+ const provider=new firebase.auth.GoogleAuthProvider();
+ provider.setCustomParameters({prompt:"select_account"});
+
+ try{
+  setAuthStatus("⏳ جاري فتح تسجيل الدخول بحساب Google...");
+  const result=await auth.signInWithPopup(provider);
+  updateAuthUI(result.user);
+ }catch(e){
+  console.error("Google sign-in error:",e);
+
+  if(e.code==="auth/popup-blocked"){
+   setAuthStatus("⚠️ المتصفح منع نافذة Google. اسمح بالنوافذ المنبثقة ثم حاول مرة أخرى.");
+  }else if(e.code==="auth/unauthorized-domain"){
+   setAuthStatus("⚠️ النطاق غير مصرح به في Firebase: "+location.hostname);
+  }else if(e.code==="auth/operation-not-supported-in-this-environment"){
+   setAuthStatus("⚠️ يجب تشغيل الموقع عبر HTTPS/HTTP، وليس فتح ملف HTML مباشرة.");
+  }else{
+   setAuthStatus("⚠️ تعذر تسجيل الدخول: "+(e.code||e.message));
+  }
+ }
+}
+
+async function signOutGoogle(){
+ try{
+  if(!auth&&!initFirebaseAuth())return;
+  await auth.signOut(); myUid=null; setAuthStatus("تم تسجيل الخروج. يمكنك تسجيل الدخول مرة أخرى.");
+ }catch(e){setAuthStatus("⚠️ تعذر تسجيل الخروج: "+(e.code||e.message));}
+}
+async function requireGoogleAuth(){
+ if(!auth&&!initFirebaseAuth())return null;
+ if(auth.currentUser)return auth.currentUser;
+
+ setAuthStatus("🔐 سجّل الدخول بحساب Google أولًا للعب أونلاين.");
+ await signInWithGoogle();
+ return auth.currentUser;
+}
+
+window.addEventListener("load",function(){initFirebaseAuth();});
+// =================================================
+const players=[
+{name:"كريستيانو رونالدو",country:"البرتغال",continent:"أوروبا",latin:false,position:"مهاجم",club:"النصر",big5:false,ballon:true,worldCup:false,ucl:true,icon:"🇵🇹"},
+{name:"ليونيل ميسي",country:"الأرجنتين",continent:"أمريكا الجنوبية",latin:true,position:"مهاجم",club:"إنتر ميامي",big5:false,ballon:true,worldCup:true,ucl:true,icon:"🇦🇷"},
+{name:"كيليان مبابي",country:"فرنسا",continent:"أوروبا",latin:false,position:"مهاجم",club:"ريال مدريد",big5:true,ballon:false,worldCup:true,ucl:false,icon:"🇫🇷"},
+{name:"نيمار",country:"البرازيل",continent:"أمريكا الجنوبية",latin:true,position:"جناح",club:"الهلال",big5:false,ballon:false,worldCup:false,ucl:false,icon:"🇧🇷"},
+{name:"محمد صلاح",country:"مصر",continent:"أفريقيا",latin:false,position:"جناح",club:"ليفربول",big5:true,ballon:false,worldCup:false,ucl:true,icon:"🇪🇬"},
+{name:"فينيسيوس جونيور",country:"البرازيل",continent:"أمريكا الجنوبية",latin:true,position:"جناح",club:"ريال مدريد",big5:true,ballon:false,worldCup:false,ucl:true,icon:"🇧🇷"},
+{name:"جود بيلينغهام",country:"إنجلترا",continent:"أوروبا",latin:false,position:"وسط",club:"ريال مدريد",big5:true,ballon:false,worldCup:false,ucl:true,icon:"🏴"},
+{name:"لوكا مودريتش",country:"كرواتيا",continent:"أوروبا",latin:false,position:"وسط",club:"ميلان",big5:true,ballon:true,worldCup:false,ucl:true,icon:"🇭🇷"},
+{name:"سيرجيو راموس",country:"إسبانيا",continent:"أوروبا",latin:false,position:"مدافع",club:"مونتيري",big5:false,ballon:false,worldCup:true,ucl:true,icon:"🇪🇸"},
+{name:"أشرف حكيمي",country:"المغرب",continent:"أفريقيا",latin:false,position:"ظهير",club:"باريس سان جيرمان",big5:true,ballon:false,worldCup:false,ucl:true,icon:"🇲🇦"},
+{name:"نونو مينديز",country:"البرتغال",continent:"أوروبا",latin:false,position:"ظهير",club:"باريس سان جيرمان",big5:true,ballon:false,worldCup:false,ucl:true,icon:"🇵🇹"},
+{name:"كيفن دي بروين",country:"بلجيكا",continent:"أوروبا",latin:false,position:"وسط",club:"نابولي",big5:true,ballon:false,worldCup:false,ucl:true,icon:"🇧🇪"},
+{name:"روبرت ليفاندوفسكي",country:"بولندا",continent:"أوروبا",latin:false,position:"مهاجم",club:"برشلونة",big5:true,ballon:false,worldCup:false,ucl:false,icon:"🇵🇱"},
+{name:"لامين يامال",country:"إسبانيا",continent:"أوروبا",latin:false,position:"جناح",club:"برشلونة",big5:true,ballon:false,worldCup:false,ucl:false,icon:"🇪🇸"},
+{name:"رودري",country:"إسبانيا",continent:"أوروبا",latin:false,position:"وسط",club:"مانشستر سيتي",big5:true,ballon:true,worldCup:false,ucl:true,icon:"🇪🇸"}
+];
+
+let myPlayer=null,botPlayer=null,candidates=[],myTurn=true,gameOver=false;
+let online=false,db=null,auth=null,roomId=null,myUid=null,myRole=null,unsubscribe=null;
+
+function clean(t){return t.toLowerCase().replace(/[؟?!.,]/g,"").replace(/أ/g,"ا").replace(/إ/g,"ا").replace(/آ/g,"ا").trim()}
+function message(t,type="system"){const d=document.createElement("div");d.className="msg "+type;d.textContent=t;const c=document.getElementById("chat");c.appendChild(d);c.scrollTop=c.scrollHeight}
+function onlineMessage(t,type="system"){const d=document.createElement("div");d.className="msg "+type;d.textContent=t;const c=document.getElementById("onlineChat");c.appendChild(d);c.scrollTop=c.scrollHeight}
+
+function showBot(){document.getElementById("menu").style.display="none";document.getElementById("start").style.display="block"}
+
+function startBotGame(){
+const t=clean(document.getElementById("playerInput").value).replace(/\s/g,"");
+myPlayer=players.find(p=>clean(p.name).replace(/\s/g,"")===t);
+if(!myPlayer){alert("اكتب اسم لاعب موجود في القائمة.");return}
+do{botPlayer=players[Math.floor(Math.random()*players.length)]}while(botPlayer===myPlayer);
+candidates=[...players];myTurn=true;gameOver=false;
+document.getElementById("start").style.display="none";document.getElementById("game").style.display="block";
+document.getElementById("myIcon").textContent=myPlayer.icon;document.getElementById("myPlayerName").textContent=myPlayer.name;
+message("🎮 بدأت اللعبة! اسألني أولًا.","system");
+}
+
+function answerQuestion(text){
+const q=clean(text);
+const countries={"برتغالي":"البرتغال","برتغالية":"البرتغال","ارجنتيني":"الأرجنتين","أرجنتيني":"الأرجنتين","برازيلي":"البرازيل","فرنسي":"فرنسا","فرنسية":"فرنسا","اسباني":"إسبانيا","إسباني":"إسبانيا","انجليزي":"إنجلترا","إنجليزي":"إنجلترا","الماني":"ألمانيا","ألماني":"ألمانيا","ايطالي":"إيطاليا","إيطالي":"إيطاليا","بلجيكي":"بلجيكا","هولندي":"هولندا","بولندي":"بولندا","كرواتي":"كرواتيا","مغربي":"المغرب","مصري":"مصر"};
+for(const w in countries)if(q.includes(w))return botPlayer.country===countries[w]?"نعم ✅":"لا ❌";
+if(q.includes("لاتيني"))return botPlayer.latin?"نعم ✅":"لا ❌";
+if(q.includes("اوروبي")||q.includes("أوروبي"))return botPlayer.continent==="أوروبا"?"نعم ✅":"لا ❌";
+if(q.includes("خمسة كبرى")||q.includes("خمسه كبرى")||q.includes("خمس كبرى")||q.includes("الدوريات الخمسة")||q.includes("الدوريات الخمس"))return botPlayer.big5?"نعم ✅":"لا ❌";
+if(q.includes("كرة ذهبية")||q.includes("الكرة الذهبية"))return botPlayer.ballon?"نعم ✅":"لا ❌";
+if(q.includes("كأس العالم")||q.includes("كاس العالم"))return botPlayer.worldCup?"نعم ✅":"لا ❌";
+if(q.includes("دوري أبطال")||q.includes("دوري ابطال")||q.includes("أبطال أوروبا")||q.includes("ابطال اوروبا"))return botPlayer.ucl?"نعم ✅":"لا ❌";
+if(q.includes("مهاجم"))return botPlayer.position==="مهاجم"?"نعم ✅":"لا ❌";
+if(q.includes("جناح"))return botPlayer.position==="جناح"?"نعم ✅":"لا ❌";
+if(q.includes("وسط"))return botPlayer.position==="وسط"?"نعم ✅":"لا ❌";
+if(q.includes("مدافع"))return botPlayer.position==="مدافع"?"نعم ✅":"لا ❌";
+if(q.includes("ظهير"))return botPlayer.position==="ظهير"?"نعم ✅":"لا ❌";
+if(q.includes("ريال مدريد")||q.includes("الريال"))return botPlayer.club==="ريال مدريد"?"نعم ✅":"لا ❌";
+if(q.includes("برشلونة")||q.includes("برشلونه"))return botPlayer.club==="برشلونة"?"نعم ✅":"لا ❌";
+if(q.includes("ليفربول"))return botPlayer.club==="ليفربول"?"نعم ✅":"لا ❌";
+if(q.includes("مانشستر سيتي")||q.includes("مان سيتي"))return botPlayer.club==="مانشستر سيتي"?"نعم ✅":"لا ❌";
+if(q.includes("باريس"))return botPlayer.club==="باريس سان جيرمان"?"نعم ✅":"لا ❌";
+if(q.includes("النصر"))return botPlayer.club==="النصر"?"نعم ✅":"لا ❌";
+if(q.includes("الهلال"))return botPlayer.club==="الهلال"?"نعم ✅":"لا ❌";
+return "🤖 ما فهمت السؤال. اسألني: هل هو برتغالي؟ هل هو لاتيني؟ هل يلعب في الخمسة الكبرى؟";
+}
+
+function askRobot(){
+if(!myTurn||gameOver){message("⏳ انتظر دورك.","system");return}
+const i=document.getElementById("questionInput"),t=i.value.trim();if(!t)return;
+message("👤 أنت: "+t,"you");i.value="";
+setTimeout(()=>{message("🤖 "+answerQuestion(t),"bot");myTurn=false;setTimeout(botTurn,600)},350);
+}
+
+function botTurn(){
+if(gameOver)return;
+const qs=[
+["هل لاعبك برتغالي؟",p=>p.country==="البرتغال"],["هل لاعبك أرجنتيني؟",p=>p.country==="الأرجنتين"],["هل لاعبك برازيلي؟",p=>p.country==="البرازيل"],["هل لاعبك فرنسي؟",p=>p.country==="فرنسا"],["هل لاعبك إسباني؟",p=>p.country==="إسبانيا"],["هل لاعبك أوروبي؟",p=>p.continent==="أوروبا"],["هل لاعبك لاتيني؟",p=>p.latin],["هل لاعبك مهاجم؟",p=>p.position==="مهاجم"],["هل لاعبك جناح؟",p=>p.position==="جناح"],["هل لاعبك وسط؟",p=>p.position==="وسط"],["هل لاعبك مدافع؟",p=>p.position==="مدافع"],["هل لاعبك ظهير؟",p=>p.position==="ظهير"],["هل يلعب في الدوريات الخمسة الكبرى؟",p=>p.big5],["هل فاز بالكرة الذهبية؟",p=>p.ballon],["هل فاز بكأس العالم؟",p=>p.worldCup],["هل فاز بدوري أبطال أوروبا؟",p=>p.ucl],["هل يلعب في ريال مدريد؟",p=>p.club==="ريال مدريد"],["هل يلعب في برشلونة؟",p=>p.club==="برشلونة"],["هل يلعب في ليفربول؟",p=>p.club==="ليفربول"],["هل يلعب في مانشستر سيتي؟",p=>p.club==="مانشستر سيتي"]];
+let best=null,bs=Infinity;qs.forEach(q=>{let y=candidates.filter(p=>q[1](p)).length,n=candidates.length-y;if(y&&n){let s=Math.abs(y-n);if(s<bs){bs=s;best=q}}});
+if(!best){myTurn=true;return}
+window.currentBotQuestion=best;
+document.getElementById("botQuestionText").textContent=best[0];
+document.getElementById("botQuestion").style.display="block";
+}
+function answerBot(a){
+if(gameOver)return;document.getElementById("botQuestion").style.display="none";
+const q=window.currentBotQuestion;candidates=candidates.filter(p=>q[1](p)===a);
+message("👤 أنت: "+(a?"نعم ✅":"لا ❌"),"you");
+message("🧠 بقي لدي "+candidates.length+" احتمال.","system");
+myTurn=true;message("🎮 دورك الآن. اسألني.","system");
+}
+function guessBotPlayer(){
+if(!myTurn||gameOver)return;
+const i=document.getElementById("guessInput"),g=clean(i.value).replace(/\s/g,"");if(!g)return;
+message("👤 تخميني: "+i.value,"you");i.value="";
+if(g===clean(botPlayer.name).replace(/\s/g,""))endBot("🏆 فزت! اكتشفت اللاعب.");
+else message("❌ تخمين خاطئ، استمر.","bot");
+}
+function endBot(t){gameOver=true;message(t,"system");message("🤖 اللاعب كان: "+botPlayer.name,"system");document.getElementById("newGame").style.display="block"}
+
+// ================= ONLINE =================
+async function startOnline(){
+ document.getElementById("menu").style.display="none";
+ document.getElementById("onlineSetup").style.display="block";
+ document.getElementById("onlineStatus").textContent="🔐 جاري التحقق من تسجيل الدخول...";
+ try{
+  const user=await requireGoogleAuth();
+  if(!user){
+   document.getElementById("onlineStatus").textContent="⚠️ سجّل الدخول بحساب Google أولًا.";
+   return;
+  }
+  myUid=user.uid;
+  document.getElementById("onlineStatus").textContent="🔎 جاري الاتصال والبحث عن لاعب...";
+  await findMatch();
+ }catch(e){
+  console.error("Online start error:",e);
+  document.getElementById("onlineStatus").textContent="⚠️ تعذر الاتصال: "+(e.code||e.message);
+ }
+}
+
+async function findMatch(){
+const queue=db.collection("matchQueue");
+const snap=await queue.where("status","==","waiting").limit(10).get();
+let found=null;
+snap.forEach(d=>{if(!found&&d.id!==myUid)found=d});
+if(found){
+roomId=found.data().roomId;
+await queue.doc(found.id).update({status:"matched",opponent:myUid});
+myRole="player2";
+await db.collection("rooms").doc(roomId).update({player2:myUid,status:"ready"});
+}else{
+roomId=db.collection("rooms").doc().id;
+await db.collection("rooms").doc(roomId).set({status:"waiting",player1:myUid,player2:null,turn:"player1",p1Player:null,p2Player:null,question:null,answer:null,winner:null});
+await queue.doc(myUid).set({status:"waiting",roomId});
+myRole="player1";
+}
+listenRoom();
+}
+
+function listenRoom(){
+if(unsubscribe)unsubscribe();
+unsubscribe=db.collection("rooms").doc(roomId).onSnapshot(s=>{
+if(!s.exists)return;
+const r=s.data();
+if(r.player1&&r.player2){
+document.getElementById("onlineStatus").textContent="✅ تم العثور على لاعب! اختر لاعبك السري.";
+if(document.getElementById("onlineGame").style.display!=="block"){
+document.getElementById("onlineGame").style.display="block";
+}
+}
+if(r.p1Player&&r.p2Player){
+const myP=myRole==="player1"?r.p1Player:r.p2Player;
+document.getElementById("onlineMyIcon").textContent=myP.icon;
+document.getElementById("onlineMyName").textContent=myP.name;
+}
+renderOnlineRoom(r);
+});
+}
+
+async function chooseOnlinePlayer(){
+const t=clean(document.getElementById("onlinePlayerInput").value).replace(/\s/g,"");
+const p=players.find(x=>clean(x.name).replace(/\s/g,"")===t);
+if(!p){alert("اكتب اسم لاعب موجود في القائمة.");return}
+const data={name:p.name,country:p.country,continent:p.continent,latin:p.latin,position:p.position,club:p.club,big5:p.big5,ballon:p.ballon,worldCup:p.worldCup,ucl:p.ucl,icon:p.icon};
+const field=myRole==="player1"?"p1Player":"p2Player";
+await db.collection("rooms").doc(roomId).update({[field]:data});
+document.getElementById("onlineStatus").textContent="⏳ تم اختيار اللاعب، انتظر خصمك...";
+}
+
+function renderOnlineRoom(r){
+if(!r.player1||!r.player2){document.getElementById("onlineTurn").textContent="🔎 جاري البحث عن لاعب...";return}
+const mine=myRole==="player1"?"player1":"player2";
+document.getElementById("onlineTurn").textContent=r.turn===mine?"🎮 دورك — اسأل الخصم":"⏳ دور الخصم";
+if(r.question&&r.question.to){
+if(r.question.to===myRole && !r.answer){
+document.getElementById("onlineQuestionText").textContent=r.question.text;
+document.getElementById("onlineAnswerBox").style.display="block";
+}else document.getElementById("onlineAnswerBox").style.display="none";
+}
+if(r.question&&r.question.text){
+const id="q_"+r.question.id;
+if(!document.getElementById(id)){
+const d=document.createElement("div");d.id=id;d.className="msg "+(r.question.from===myRole?"you":"bot");d.textContent=(r.question.from===myRole?"👤 أنت: ":"👤 الخصم: ")+r.question.text;document.getElementById("onlineChat").appendChild(d);
+}
+}
+if(r.answer&&r.answer.id){
+const id="a_"+r.answer.id;
+if(!document.getElementById(id)){
+const d=document.createElement("div");d.id=id;d.className="msg bot";d.textContent="🤖 الإجابة: "+(r.answer.value?"نعم ✅":"لا ❌");document.getElementById("onlineChat").appendChild(d);
+}
+}
+if(r.winner){
+document.getElementById("onlineTurn").textContent=r.winner===myRole?"🏆 فزت!":"❌ خسرت!";
+document.getElementById("newGame").style.display="block";
+}
+}
+
+async function sendOnlineQuestion(){
+const input=document.getElementById("onlineQuestion"),text=input.value.trim();if(!text)return;
+const r=(await db.collection("rooms").doc(roomId).get()).data();
+if(r.turn!==myRole||!r.p1Player||!r.p2Player){alert("ليس دورك أو لم يختَر اللاعبان بعد.");return}
+const id=Date.now().toString();
+await db.collection("rooms").doc(roomId).update({question:{id,text,from:myRole,to:myRole==="player1"?"player2":"player1"},answer:null});
+input.value="";
+}
+
+async function answerOnline(v){
+const r=(await db.collection("rooms").doc(roomId).get()).data();
+if(!r.question||r.question.to!==myRole)return;
+await db.collection("rooms").doc(roomId).update({answer:{id:r.question.id,value:v}});
+document.getElementById("onlineAnswerBox").style.display="none";
+setTimeout(async()=>{const latest=(await db.collection("rooms").doc(roomId).get()).data();if(latest.turn===myRole){return}await db.collection("rooms").doc(roomId).update({turn:myRole,question:null,answer:null})},500);
+}
+
+async function sendOnlineGuess(){
+const input=document.getElementById("onlineGuess"),g=clean(input.value).replace(/\s/g,"");if(!g)return;
+const r=(await db.collection("rooms").doc(roomId).get()).data();
+const enemy=myRole==="player1"?r.p2Player:r.p1Player;
+if(!enemy){alert("انتظر اختيار الخصم.");return}
+const correct=clean(enemy.name).replace(/\s/g,"");
+if(g===correct)await db.collection("rooms").doc(roomId).update({winner:myRole});
+else {onlineMessage("❌ تخمين خاطئ.","you");}
+input.value="";
+}
+</script>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+</body>
+</html>
 
